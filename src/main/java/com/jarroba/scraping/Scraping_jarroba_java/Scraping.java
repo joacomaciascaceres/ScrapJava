@@ -2,8 +2,6 @@ package com.jarroba.scraping.Scraping_jarroba_java;
 
 import java.io.IOException;
 import java.sql.*;
-
-//import java.util.Scanner;
 import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -12,12 +10,18 @@ import org.jsoup.select.Elements;
 
 public class Scraping {	
 	
+	public static String correlativoOT;
 	public static String rolEntrada;
 	public static String letraEntrada;
 	public static String anioEntrada;
 	public static String codtribunalEntrada;
 	public static String idcuadernoEntrada;
+	public static String tipcuadernoEntrada;
+	
 	public static int auxiliarInsert = 0;
+	public static int auxiliarInsert2 = 0;
+    public static int auxiliarEntradaINSERT = 0;
+	
 	public static String ROL_INSERT;
 	public static String FECHA_INGRESO_INSERT;
 	public static String ESTADO_ADMINISTRATIVO_INSERT;
@@ -26,11 +30,14 @@ public class Scraping {
 	public static String ETAPA_INSERT;
 	public static String TRIBUNAL_INSERT;
 	public static String ENLACE_TXT_DEMANDA_INSERT;
+	
 	public static String url;
 	
-//	public static final String url = "http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=1&CRR_IdCuaderno=18899924&ROL_Causa=24745&TIP_Causa=C&ERA_Causa=2015&CRR_IdCausa=14979001&COD_Tribunal=268&TIP_Informe=1&";	
+	public static String parte1Tramites;
+	public static String parte2Tramites;
+	public static String parte3Tramites;
 	
-	//private static Scanner scanner;
+//	public static final String url = "http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=1&CRR_IdCuaderno=18899924&ROL_Causa=24745&TIP_Causa=C&ERA_Causa=2015&CRR_IdCausa=14979001&COD_Tribunal=268&TIP_Informe=1&";	
 
 	public static void main (String args[]) throws IOException {		
 		
@@ -38,7 +45,7 @@ public class Scraping {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection conexion = DriverManager.getConnection("jdbc:mysql://localhost/webscrap?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "");
             Statement st = conexion.createStatement();
-            ResultSet rs = st.executeQuery("select * from ot LIMIT 1;");
+            ResultSet rs = st.executeQuery("select * from ot WHERE ID_OT = 4;");
  
             if (rs != null) {
             	System.out.println("+----------------CAUSA OT----------------+");
@@ -46,14 +53,19 @@ public class Scraping {
                     System.out.println("> CAUSA: " + rs.getString("LETRA") + "-" + rs.getString("ROL") + "-" +rs.getString("YEAR"));
                     System.out.println("> TRIBUNAL COD: " + rs.getString("TRIBUNAL"));
                     System.out.println("> ID_CUADERNO: " + rs.getString("IDCUADERNO"));
+                    System.out.println("> TIP_CUADERNO: " + rs.getString("TIPCUADERNO"));
                     System.out.println("+----------------CAUSA OT----------------+");
+                    correlativoOT = rs.getString("ID_OT");
                     rolEntrada = rs.getString("ROL");
             		letraEntrada = rs.getString("LETRA");
             		anioEntrada = rs.getString("YEAR");
             		codtribunalEntrada = rs.getString("TRIBUNAL");
             		idcuadernoEntrada = rs.getString("IDCUADERNO");
-            		url = "http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=1&CRR_IdCuaderno="+idcuadernoEntrada+"&ROL_Causa="+rolEntrada+"&TIP_Causa="+letraEntrada+"&ERA_Causa="+anioEntrada+"&COD_Tribunal="+codtribunalEntrada+"&TIP_Informe=1&";
-            		//System.out.println(url);
+            		tipcuadernoEntrada = rs.getString("TIPCUADERNO");
+            		url = "http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno="+tipcuadernoEntrada+"&CRR_IdCuaderno="+idcuadernoEntrada+"&ROL_Causa="+rolEntrada+"&TIP_Causa="+letraEntrada+"&ERA_Causa="+anioEntrada+"&COD_Tribunal="+codtribunalEntrada+"&TIP_Informe=1&";
+            		//url = "http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=1&CRR_IdCuaderno=18899924&ROL_Causa=24745&TIP_Causa=C&ERA_Causa=2015&CRR_IdCausa=14979001&COD_Tribunal=268&TIP_Informe=1&";	
+
+            		// /CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=49&CRR_IdCuaderno=16745951&ROL_Causa=1000&TIP_Causa=C&ERA_Causa=2015&CRR_IdCausa=13259543&COD_Tribunal=345&TIP_Informe=1&
                 }
                 rs.close();
             }
@@ -71,48 +83,6 @@ public class Scraping {
             System.out.println("SQLException: " + s.getMessage());
         }
 		
-		/*String[] rolUno = {"24745","C","2015","268","18899924"};
-		for(int i = 0 ; i < rolUno.length ; i++)
-		{
-		    //System.out.println(rolUno[i]);
-		    if(i == 0) {
-		    	rolEntrada = rolUno[i];
-		    }
-		    if(i == 1) {
-		    	letraEntrada = rolUno[i];
-		    }
-		    if(i == 2) {
-		    	anioEntrada = rolUno[i];
-		    }
-		    if(i == 3) {
-		    	codtribunalEntrada = rolUno[i];
-		    }
-		    if(i == 4) {
-		    	idcuadernoEntrada = rolUno[i];
-		    }
-		    
-		}*/
-				
-		/*String rolEntrada = rolUno[0];
-		String letraEntrada = rolUno[1];
-		String anioEntrada = rolUno[2];
-		String codtribunalEntrada = rolUno[3];
-		String idcuadernoEntrada = rolUno[4];
-		
-		scanner = new Scanner(System.in);		
-		System.out.print("Ingrese el rol de la causa (EJ:C-[24745]-2015): ");
-		String rolEntrada = scanner.nextLine();
-		System.out.print("Ingresa la letra de la causa (EJ:[C]-24745-2015): ");
-		String letraEntrada = scanner.nextLine();
-		System.out.print("Ingresa el año de la causa (EJ: C-24745-[2015]): ");
-		String anioEntrada = scanner.nextLine();
-		System.out.print("Ingresa el codigo del tribunal (EJ: 268): ");
-		String codtribunalEntrada = scanner.nextLine();
-		String idcuadernoEntrada = "18899924";*/
-		
-		//String url = "http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=1&CRR_IdCuaderno="+idcuadernoEntrada+"&ROL_Causa="+rolEntrada+"&TIP_Causa="+letraEntrada+"&ERA_Causa="+anioEntrada+"&COD_Tribunal="+codtribunalEntrada+"&TIP_Informe=1&";	
-		           // http://civil.poderjudicial.cl/CIVILPORWEB/ConsultaDetalleAtPublicoAccion.do?TIP_Consulta=1&TIP_Cuaderno=1&CRR_IdCuaderno=18899924&ROL_Causa=24745&TIP_Causa=C&ERA_Causa=2015&CRR_IdCausa=14979001&COD_Tribunal=268&TIP_Informe=1&"
-		//System.out.println(url);
 		if (getStatusConnectionCode(url) == 200) {
 			
 			System.out.println("INICIO DE EJECUCIÓN.");
@@ -198,34 +168,70 @@ public class Scraping {
 				}
 				
 				if(auxiliarInsert == 0) {
-					st.executeUpdate("INSERT INTO caratulas (`ROL`, `FECHA_INGRESO`, `ESTADO_ADMINISTRATIVO`, `PROCEDIMIENTO`, `UBICACION`, `ETAPA`, `TRIBUNAL`) VALUES ('"+ROL_INSERT+"', '"+FECHA_INGRESO_INSERT+"', '"+ESTADO_ADMINISTRATIVO_INSERT+"', '"+PROCEDIMIENTO_INSERT+"', '"+UBICACION_INSERT+"', '"+ETAPA_INSERT+"', '"+TRIBUNAL_INSERT+"');");
-					auxiliarInsert++;
+					st.executeUpdate("INSERT INTO caratulas (`ROL`, `FECHA_INGRESO`, `ESTADO_ADMINISTRATIVO`, `PROCEDIMIENTO`, `UBICACION`, `ETAPA`, `TRIBUNAL`, `FK_ID_OT`) "
+					      + "VALUES ('"+ROL_INSERT+"', '"+FECHA_INGRESO_INSERT+"', '"+ESTADO_ADMINISTRATIVO_INSERT+"', '"+PROCEDIMIENTO_INSERT+"', '"+UBICACION_INSERT+"', '"+ETAPA_INSERT+"', '"+TRIBUNAL_INSERT+"', '"+correlativoOT+"');");
+					auxiliarInsert=1;
 				}
 				System.out.println("+----------------CARATULADO----------------+");
 				System.out.println("+----------------CONTENIDO----------------+");
 				System.out.println(" ETAPA | TRÁMITE | DESC. TRÁMITE | FEC. TRÁMITE | FOJA");
 				Elements entradas_contenido = document.select("table > tbody > tr > td").not("td[bgcolor=\"#DBE5EB\"]").not("td[width=\"30\"]");
+				int auxiliarEntrada = 0;				
 				for (Element elem : entradas_contenido) {
 					String textohtml_texto = elem.getElementsByClass("texto").text();
 					String textohtml_textoC = elem.getElementsByClass("textoC").text();
 					String textohtml_numero = elem.getElementsByClass("numero").text();
 					
-					if((textohtml_texto != null) && (!textohtml_texto.equals(""))){
-						System.out.print(textohtml_texto+"|");
+					if(auxiliarInsert2 > 29) 
+					{
+						if((textohtml_texto != null) && (!textohtml_texto.equals(""))){
+							
+							/*AB.DTE*/
+							String litigantes = "AB.DTE";							
+							boolean litigantesEncontrado = textohtml_texto.contains(litigantes);
+							if(litigantesEncontrado){								
+								if(auxiliarEntrada == 0){
+									auxiliarEntrada++;
+									System.out.println();
+									System.out.println(" PARTICIPANTE | RUT | PERSONA | NOMBRE");
+								}								
+								//System.out.print(textohtml_texto+"|");
+							}							
+							System.out.print(textohtml_texto+"|");		
+							auxiliarEntradaINSERT++;							
+							parte1Tramites = textohtml_texto;
+							
+						}
+						
+						if((textohtml_textoC != null) && (!textohtml_textoC.equals(""))){
+							System.out.print(textohtml_textoC+"|");
+							parte2Tramites = textohtml_textoC;
+						}
+						
+						if((textohtml_numero != null) && (!textohtml_numero.equals(""))){
+							System.out.print(textohtml_numero+"|");
+							parte3Tramites = textohtml_numero;
+							System.out.println();
+						}							
+						
 					}
-					
-					if((textohtml_textoC != null) && (!textohtml_textoC.equals(""))){
-						System.out.print(textohtml_textoC+"|");
-					}
-					
-					if((textohtml_numero != null) && (!textohtml_numero.equals(""))){
-						System.out.print(textohtml_numero+"|");
-						System.out.println();
-					}
-					
+					//System.out.print("CONTADOR: "+auxiliarInsert2);
+					auxiliarInsert2++;
+							
+					/*st.executeUpdate("INSERT INTO tramites (`PARTE`, `PARTE2`, `PARTE3`) "
+							  + "VALUES ('"+parte1Tramites+"', '"+parte2Tramites+"', '"+parte3Tramites+"');");*/
+						
 					//System.out.println("TEXTO: "+textohtml_texto+"|"+textohtml_textoC+"|"+textohtml_numero);
+					/*if(auxiliarInsert == 1) {
+						st.executeUpdate("INSERT INTO tramites (`ETAPA`, `TRAMITE`, `DESC_TRAMITE`, `FECHA_TRAMITE`, `FOJA`, `FK_ID_CARATULAS`) "
+							  + "VALUES ('"+ROL_INSERT+"', '"+FECHA_INGRESO_INSERT+"', '"+ESTADO_ADMINISTRATIVO_INSERT+"', '"+PROCEDIMIENTO_INSERT+"', '"+UBICACION_INSERT+"', '"+ETAPA_INSERT+"', '"+TRIBUNAL_INSERT+"', '"+correlativoOT+"');");
+						auxiliarInsert=2;
+					}*/
 					
 				}				
+				/*System.out.println("++");
+		        System.out.println("TEXTO: "+parte1Tramites+"|"+parte2Tramites+"|"+parte3Tramites);
+		        System.out.println("++");*/
 				/*System.out.println("++++++ FECHA CONTENIDO  ++++++");
 				
 				Elements entradas_contenido_fecha = document.select("table > tbody > tr > td.textoC").not("td[bgcolor=\"#DBE5EB\"]");
@@ -256,7 +262,9 @@ public class Scraping {
 	        {
 	            System.out.println("Error: Varios.");
 	            System.out.println("SQLException: " + s.getMessage());
-	        }
+	        }	       
+	        System.out.println();	
+	        System.out.println("TRAMITE(S): "+auxiliarEntradaINSERT);	
 	        System.out.println("FIN DE EJECUCIÓN.");
 	        System.out.println("+----------------CONTENIDO----------------+");
 				
