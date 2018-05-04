@@ -21,6 +21,11 @@ public class Scraping {
 	public static int auxiliarInsert = 0;
 	public static int auxiliarInsert2 = 0;
     public static int auxiliarEntradaINSERT = 0;
+    public static int auxiliarUPDATE = 1;
+    public static int auxiliarUPDATE_MAX = 0;
+    public static int auxiliarCaratulasUPDATE_MAX = 0;
+    public static int auxiliarInsertLitigantes = 0;
+    public static int auxiliarContadordeLineasdeTramite = 0;
 	
 	public static String ROL_INSERT;
 	public static String FECHA_INGRESO_INSERT;
@@ -170,6 +175,10 @@ public class Scraping {
 				if(auxiliarInsert == 0) {
 					st.executeUpdate("INSERT INTO caratulas (`ROL`, `FECHA_INGRESO`, `ESTADO_ADMINISTRATIVO`, `PROCEDIMIENTO`, `UBICACION`, `ETAPA`, `TRIBUNAL`, `FK_ID_OT`) "
 					      + "VALUES ('"+ROL_INSERT+"', '"+FECHA_INGRESO_INSERT+"', '"+ESTADO_ADMINISTRATIVO_INSERT+"', '"+PROCEDIMIENTO_INSERT+"', '"+UBICACION_INSERT+"', '"+ETAPA_INSERT+"', '"+TRIBUNAL_INSERT+"', '"+correlativoOT+"');");
+					ResultSet rst = st.executeQuery("SELECT MAX(ID_CARATULAS) FROM caratulas;");
+					if (rst.next()) {
+					    auxiliarCaratulasUPDATE_MAX = rst.getInt(1);
+					}
 					auxiliarInsert=1;
 				}
 				System.out.println("+----------------CARATULADO----------------+");
@@ -194,31 +203,61 @@ public class Scraping {
 									auxiliarEntrada++;
 									System.out.println();
 									System.out.println(" PARTICIPANTE | RUT | PERSONA | NOMBRE");
+									auxiliarInsertLitigantes = 99;
 								}								
 								//System.out.print(textohtml_texto+"|");
-							}							
-							System.out.print(textohtml_texto+"|");		
-							auxiliarEntradaINSERT++;							
-							parte1Tramites = textohtml_texto;
+								
+							}					
 							
+							System.out.println(textohtml_texto+"(1)");							
+							parte1Tramites = textohtml_texto;	
+							
+							if(auxiliarInsertLitigantes == 99) {
+								st.executeUpdate("INSERT INTO litigantes (`PARTICIPANTE`) VALUES ('"+parte1Tramites+"');");
+							}
+							
+							if(auxiliarUPDATE == 1) {
+								st.executeUpdate("INSERT INTO tramites (`ETAPA`, `FK_ID_CARATULAS`) "
+										  + "VALUES ('"+parte1Tramites+"', '"+auxiliarCaratulasUPDATE_MAX+"');");
+								
+								ResultSet rst = st.executeQuery("SELECT MAX(ID_TRAMITES) FROM tramites;");
+								if (rst.next()) {
+								    auxiliarUPDATE_MAX = rst.getInt(1);
+								}
+								auxiliarUPDATE = 2;								
+							}else{
+								if(auxiliarUPDATE == 2) {
+									st.executeUpdate("UPDATE tramites SET TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+									auxiliarUPDATE = 3;
+								}else {
+									if(auxiliarUPDATE == 3) {
+										st.executeUpdate("UPDATE tramites SET DESC_TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+										auxiliarUPDATE = 1;
+									}
+								}
+							}
 						}
 						
 						if((textohtml_textoC != null) && (!textohtml_textoC.equals(""))){
-							System.out.print(textohtml_textoC+"|");
+							System.out.println(textohtml_textoC+"(2)");
 							parte2Tramites = textohtml_textoC;
+							
 						}
 						
 						if((textohtml_numero != null) && (!textohtml_numero.equals(""))){
-							System.out.print(textohtml_numero+"|");
+							System.out.println(textohtml_numero+"(3)");
 							parte3Tramites = textohtml_numero;
 							System.out.println();
+							st.executeUpdate("UPDATE tramites SET FECHA_TRAMITE = '"+parte2Tramites+"', FOJA = '"+parte3Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+							auxiliarContadordeLineasdeTramite++;
 						}							
-						
+						auxiliarEntradaINSERT++;
 					}
+					
 					//System.out.print("CONTADOR: "+auxiliarInsert2);
 					auxiliarInsert2++;
 							
-					/*st.executeUpdate("INSERT INTO tramites (`PARTE`, `PARTE2`, `PARTE3`) "
+					/*st.executeUpdate("INSERT INTO tramites (`ETAPA`, `TRAMITE`, `FECHA_TRAMITE`) "
 							  + "VALUES ('"+parte1Tramites+"', '"+parte2Tramites+"', '"+parte3Tramites+"');");*/
 						
 					//System.out.println("TEXTO: "+textohtml_texto+"|"+textohtml_textoC+"|"+textohtml_numero);
