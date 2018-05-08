@@ -22,10 +22,15 @@ public class Scraping {
 	public static int auxiliarInsert2 = 0;
     public static int auxiliarEntradaINSERT = 0;
     public static int auxiliarUPDATE = 1;
+    public static int auxiliarUPDATELitigante = 1;
     public static int auxiliarUPDATE_MAX = 0;
+    public static int auxiliarUPDATE_MAXLitigantes = 0;
     public static int auxiliarCaratulasUPDATE_MAX = 0;
     public static int auxiliarInsertLitigantes = 0;
     public static int auxiliarContadordeLineasdeTramite = 0;
+    public static int marcadorVACIO = 0;
+    public static int contadorVacio = 0;
+    public static int contadorVACIOInsert = 0;
 	
 	public static String ROL_INSERT;
 	public static String FECHA_INGRESO_INSERT;
@@ -50,7 +55,7 @@ public class Scraping {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection conexion = DriverManager.getConnection("jdbc:mysql://localhost/webscrap?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "");
             Statement st = conexion.createStatement();
-            ResultSet rs = st.executeQuery("select * from ot WHERE ID_OT = 4;");
+            ResultSet rs = st.executeQuery("select * from ot WHERE ID_OT = 1;");
  
             if (rs != null) {
             	System.out.println("+----------------CAUSA OT----------------+");
@@ -188,12 +193,28 @@ public class Scraping {
 				int auxiliarEntrada = 0;				
 				for (Element elem : entradas_contenido) {
 					String textohtml_texto = elem.getElementsByClass("texto").text();
+					String textohtml_texto_string = elem.getElementsByClass("texto").toString();
 					String textohtml_textoC = elem.getElementsByClass("textoC").text();
 					String textohtml_numero = elem.getElementsByClass("numero").text();
 					
+					if(textohtml_texto_string.equals("")) {
+						System.out.println("TEXTO VACIO ("+contadorVacio +")");
+						contadorVacio++;						
+					}else {						
+						boolean estadoStringEncontrado = textohtml_texto_string.contains("> <");
+						if(estadoStringEncontrado){
+							System.out.println("TEXTO NO VACIO (ESPACIO)");
+							contadorVACIOInsert = 1;
+							textohtml_texto = "-";
+						}else {
+							contadorVACIOInsert = 0;
+						}
+					}
+					
 					if(auxiliarInsert2 > 29) 
 					{
-						if((textohtml_texto != null) && (!textohtml_texto.equals(""))){
+						contadorVacio = 0;
+						if((textohtml_texto != null) && (!textohtml_texto.equals(""))){							
 							
 							/*AB.DTE*/
 							String litigantes = "AB.DTE";							
@@ -212,31 +233,83 @@ public class Scraping {
 							System.out.println(textohtml_texto+"(1)");							
 							parte1Tramites = textohtml_texto;	
 							
-							if(auxiliarInsertLitigantes == 99) {
+							/* INICIO: GUARDADO DE LITIGANTES DE LA CAUSA */
+							if(auxiliarInsertLitigantes == 99 && auxiliarUPDATELitigante == 1) {
 								st.executeUpdate("INSERT INTO litigantes (`PARTICIPANTE`) VALUES ('"+parte1Tramites+"');");
-							}
-							
-							if(auxiliarUPDATE == 1) {
-								st.executeUpdate("INSERT INTO tramites (`ETAPA`, `FK_ID_CARATULAS`) "
-										  + "VALUES ('"+parte1Tramites+"', '"+auxiliarCaratulasUPDATE_MAX+"');");
-								
-								ResultSet rst = st.executeQuery("SELECT MAX(ID_TRAMITES) FROM tramites;");
-								if (rst.next()) {
-								    auxiliarUPDATE_MAX = rst.getInt(1);
+								ResultSet rst2 = st.executeQuery("SELECT MAX(ID_LITIGANTES) FROM litigantes;");
+								if (rst2.next()) {
+									auxiliarUPDATE_MAXLitigantes = rst2.getInt(1);
 								}
-								auxiliarUPDATE = 2;								
+								auxiliarUPDATELitigante = 2;	
+							}else{
+								if(auxiliarUPDATELitigante == 2) {
+									st.executeUpdate("UPDATE litigantes SET RUT = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"';");
+									auxiliarUPDATELitigante = 3;
+								}else {
+									if(auxiliarUPDATELitigante == 3) {
+										st.executeUpdate("UPDATE litigantes SET PERSONA = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"';");
+										auxiliarUPDATELitigante = 4;
+									}else {
+										if(auxiliarUPDATELitigante == 4) {
+											st.executeUpdate("UPDATE litigantes SET NOMBRE = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"';");
+											auxiliarUPDATELitigante = 1;
+										}
+									}
+								}
+							}
+							/* FIN: GUARDADO DE LITIGANTES DE LA CAUSA */
+							
+							/* INICIO PARTE 1: GUARDADO DE TRAMITES DE LA CAUSA */
+							if(auxiliarUPDATE == 1) {
+								
+								if(contadorVACIOInsert == 1) {
+									st.executeUpdate("INSERT INTO tramites (`ETAPA`, `FK_ID_CARATULAS`) "
+											  + "VALUES ('-', '"+auxiliarCaratulasUPDATE_MAX+"');");
+									
+									ResultSet rst = st.executeQuery("SELECT MAX(ID_TRAMITES) FROM tramites;");
+									if (rst.next()) {
+									    auxiliarUPDATE_MAX = rst.getInt(1);
+									}
+									auxiliarUPDATE = 2;
+								}else {
+									st.executeUpdate("INSERT INTO tramites (`ETAPA`, `FK_ID_CARATULAS`) "
+											  + "VALUES ('"+parte1Tramites+"', '"+auxiliarCaratulasUPDATE_MAX+"');");
+									
+									ResultSet rst = st.executeQuery("SELECT MAX(ID_TRAMITES) FROM tramites;");
+									if (rst.next()) {
+									    auxiliarUPDATE_MAX = rst.getInt(1);
+									}
+									auxiliarUPDATE = 2;
+								}
+								
 							}else{
 								if(auxiliarUPDATE == 2) {
-									st.executeUpdate("UPDATE tramites SET TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
-									auxiliarUPDATE = 3;
+									
+									if(contadorVACIOInsert == 1) {
+										st.executeUpdate("UPDATE tramites SET TRAMITE = '-' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+										auxiliarUPDATE = 3;
+									}else {
+										st.executeUpdate("UPDATE tramites SET TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+										auxiliarUPDATE = 3;
+									}
+									
 								}else {
+									
 									if(auxiliarUPDATE == 3) {
-										st.executeUpdate("UPDATE tramites SET DESC_TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
-										auxiliarUPDATE = 1;
+										
+										if(contadorVACIOInsert == 1) {
+											st.executeUpdate("UPDATE tramites SET DESC_TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+											auxiliarUPDATE = 1;
+										}else {
+											st.executeUpdate("UPDATE tramites SET DESC_TRAMITE = '"+parte1Tramites+"' WHERE ID_TRAMITES = '"+auxiliarUPDATE_MAX+"';");
+											auxiliarUPDATE = 1;
+										}
+										
 									}
 								}
 							}
 						}
+						/* FIN PARTE 1: GUARDADO DE TRAMITES DE LA CAUSA */
 						
 						if((textohtml_textoC != null) && (!textohtml_textoC.equals(""))){
 							System.out.println(textohtml_textoC+"(2)");
