@@ -190,7 +190,8 @@ public class Scraping {
 				System.out.println("+----------------CONTENIDO----------------+");
 				System.out.println(" ETAPA | TRÁMITE | DESC. TRÁMITE | FEC. TRÁMITE | FOJA");
 				Elements entradas_contenido = document.select("table > tbody > tr > td").not("td[bgcolor=\"#DBE5EB\"]").not("td[width=\"30\"]");
-				int auxiliarEntrada = 0;				
+				int auxiliarEntrada = 0;
+				int auxiliarEntradaEncontrado = 0;
 				for (Element elem : entradas_contenido) {
 					String textohtml_texto = elem.getElementsByClass("texto").text();
 					String textohtml_texto_string = elem.getElementsByClass("texto").toString();
@@ -219,9 +220,19 @@ public class Scraping {
 							/*AB.DTE*/
 							String litigantes = "AB.DTE";							
 							boolean litigantesEncontrado = textohtml_texto.contains(litigantes);
-							if(litigantesEncontrado){								
-								if(auxiliarEntrada == 0){
+							
+							String litigantes2 = "AB.DDO";							
+							boolean litigantesEncontrado2 = textohtml_texto.contains(litigantes2);
+							
+							String litigantes3 = "DDO";							
+							boolean litigantesEncontrado3 = textohtml_texto.contains(litigantes3);
+							
+							String litigantes4 = "DTE.";							
+							boolean litigantesEncontrado4 = textohtml_texto.contains(litigantes4);
+							if(litigantesEncontrado || litigantesEncontrado2 || litigantesEncontrado3 || litigantesEncontrado4){								
+								if(auxiliarEntrada == 0 && auxiliarEntradaEncontrado == 0){
 									auxiliarEntrada++;
+									auxiliarEntradaEncontrado = 1;
 									System.out.println();
 									System.out.println(" PARTICIPANTE | RUT | PERSONA | NOMBRE");
 									auxiliarInsertLitigantes = 99;
@@ -235,7 +246,7 @@ public class Scraping {
 							
 							/* INICIO: GUARDADO DE LITIGANTES DE LA CAUSA */
 							if(auxiliarInsertLitigantes == 99 && auxiliarUPDATELitigante == 1) {
-								st.executeUpdate("INSERT INTO litigantes (`PARTICIPANTE`) VALUES ('"+parte1Tramites+"');");
+								st.executeUpdate("INSERT INTO litigantes (`PARTICIPANTE`, `FK_ID_CARATULAS`) VALUES ('"+parte1Tramites+"', '"+auxiliarCaratulasUPDATE_MAX+"');");
 								ResultSet rst2 = st.executeQuery("SELECT MAX(ID_LITIGANTES) FROM litigantes;");
 								if (rst2.next()) {
 									auxiliarUPDATE_MAXLitigantes = rst2.getInt(1);
@@ -243,15 +254,15 @@ public class Scraping {
 								auxiliarUPDATELitigante = 2;	
 							}else{
 								if(auxiliarUPDATELitigante == 2) {
-									st.executeUpdate("UPDATE litigantes SET RUT = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"';");
+									st.executeUpdate("UPDATE litigantes SET RUT = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"' AND FK_ID_CARATULAS = '"+auxiliarCaratulasUPDATE_MAX+"';");
 									auxiliarUPDATELitigante = 3;
 								}else {
 									if(auxiliarUPDATELitigante == 3) {
-										st.executeUpdate("UPDATE litigantes SET PERSONA = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"';");
+										st.executeUpdate("UPDATE litigantes SET PERSONA = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"' AND FK_ID_CARATULAS = '"+auxiliarCaratulasUPDATE_MAX+"';");
 										auxiliarUPDATELitigante = 4;
 									}else {
 										if(auxiliarUPDATELitigante == 4) {
-											st.executeUpdate("UPDATE litigantes SET NOMBRE = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"';");
+											st.executeUpdate("UPDATE litigantes SET NOMBRE = '"+parte1Tramites+"' WHERE ID_LITIGANTES = '"+auxiliarUPDATE_MAXLitigantes+"' AND FK_ID_CARATULAS = '"+auxiliarCaratulasUPDATE_MAX+"';");
 											auxiliarUPDATELitigante = 1;
 										}
 									}
@@ -376,7 +387,24 @@ public class Scraping {
 	            System.out.println("SQLException: " + s.getMessage());
 	        }	       
 	        System.out.println();	
-	        System.out.println("TRAMITE(S): "+auxiliarEntradaINSERT);	
+	        System.out.println("TRAMITE(S): "+auxiliarEntradaINSERT);
+	        
+		        try {
+		        	Class.forName("com.mysql.cj.jdbc.Driver");
+		            Connection conexion = DriverManager.getConnection("jdbc:mysql://localhost/webscrap?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "");
+		            Statement st = conexion.createStatement();
+		            st.executeQuery("call sp_delTramites();"); 
+		        }
+		        catch(SQLException s)
+		        {
+		            System.out.println("Error: SQL.");
+		            System.out.println("SQLException: " + s.getMessage());
+		        }
+		        catch(Exception s)
+		        {
+		            System.out.println("Error: Varios.");
+		            System.out.println("SQLException: " + s.getMessage());
+		        }	        
 	        System.out.println("FIN DE EJECUCIÓN.");
 	        System.out.println("+----------------CONTENIDO----------------+");
 				
